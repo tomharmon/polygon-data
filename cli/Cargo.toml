@@ -1,0 +1,18 @@
+[package]
+name = "polygon-cli"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+polygon-data = { path = "../lib" }
+chrono.workspace = true
+clap.workspace = true
+serde.workspace = true
+tokio.workspace = true
+tracing-subscriber.workspace = true
+anyhow.workspace = true
+serde_yaml.workspace = true
+toml.workspace = true
+serde_json.workspace = true
+tracing-appender.workspace = true
