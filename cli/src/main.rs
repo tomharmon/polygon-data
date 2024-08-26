@@ -9,6 +9,7 @@ use polygon_data::{
     types::Timespan,
 };
 use std::fs;
+use tracing_subscriber::{fmt, layer::SubscriberExt, prelude::*, EnvFilter};
 
 const DEFAULT_CHUNK_SIZE: u32 = 5_000;
 
@@ -43,10 +44,10 @@ async fn main() -> Result<()> {
         "polygon-data.log",
     );
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
-    tracing_subscriber::fmt()
-        .with_writer(non_blocking)
-        .with_ansi(false)
-        .with_max_level(tracing_subscriber::filter::LevelFilter::DEBUG)
+
+    tracing_subscriber::registry()
+        .with(fmt::layer().with_ansi(false).with_writer(non_blocking))
+        .with(EnvFilter::from_default_env())
         .init();
     let api_key = args.polygon_api_key.clone();
     let config = args.try_into()?;

@@ -89,23 +89,37 @@ impl Service {
         request: AggregateRequest<'a>,
     ) -> BoxStream<Result<Vec<AggregateRecord>, Error>> {
         let client = self.client.clone();
-        let stream =
-            stream::unfold((request, None), move |(mut request, next_url)| {
+        let stream = stream::unfold(
+            (request, None, false),
+            move |(mut request, next_url, final_page)| {
                 let client = client.clone();
                 async move {
-                    if let Some(url) = next_url {
+                    if final_page {
+                        return None;
+                    } else if let Some(url) = next_url {
                         request.next_url = Some(url);
                     }
 
                     match client.get_aggregate(&request).await {
-                        Ok(response) => Some((
+                        Ok(response) if response.next_url.is_some() => Some((
                             Ok(response.results),
-                            (request, response.next_url),
+                            (request, response.next_url, false),
                         )),
-                        Err(e) => Some((Err(e), (request, None))),
+                        Ok(response) => {
+                            debug!(
+                                num_results = response.results_count,
+                                "Got final page of data"
+                            );
+                            Some((
+                                Ok(response.results),
+                                (request, response.next_url, true),
+                            ))
+                        }
+                        Err(e) => Some((Err(e), (request, None, false))),
                     }
                 }
-            });
+            },
+        );
 
         stream.boxed()
     }
@@ -157,14 +171,13 @@ impl Service {
                 }
             }
             progress_bar.inc(1);
-            sleep(Duration::from_secs(1)).await
+            sleep(Duration::from_millis(20)).await
         }
 
         Ok(())
     }
 }
 
-// TODO: this estimate is wrong but not sure why.
 // According to Polygon docs, it should work
 /// Estimate the number of chunks for the given `timespan` and the time interval
 fn num_chunks(

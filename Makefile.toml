@@ -1,0 +1,15 @@
+[config]
+default_to_workspace = false
+
+[tasks.debug]
+description = "Set RUST_LOG environment variable and run cargo run with passed arguments"
+env = { RUST_LOG = "info,polygon_data=debug,polygon_cli=debug" }
+script = """
+#!/bin/sh
+
+echo $RUST_LOG
+echo $RUST_LOG
+echo $RUST_LOG
+
+cargo run -- "$@"
+"""
